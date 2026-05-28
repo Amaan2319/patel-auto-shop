@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Montserrat", sans-serif;
+  --font-mono: "Space Grotesk", monospace;
+  
+  --color-brand-orange: #FF8C00;
+  --color-brand-orange-hover: #E07B00;
+  --color-dark-bg: #0A0A0A;
+  --color-dark-card: #0F0F0F;
+  --color-dark-border: rgba(255, 255, 255, 0.1);
+  
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Custom styles for high-fidelity gaming/mechanical auto look */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-dark-bg);
+    color: #F3F4F6;
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+  }
+  
+  /* Custom scrollbar to match the high-end auto design */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0B0B0C;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1F2023;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #FF8C00;
+  }
+}
+
+/* Customized utility animations */
+.glow-on-hover:hover {
+  box-shadow: 0 0 20px rgba(255, 140, 0, 0.45);
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Patel Enterprise",
+  "description": "Ahmedabad's premier destination for high-end automotive setups, specializing in premium audio, custom lighting, and performance accessories.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db, storage, auth } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Trash2, Edit2, Plus, LogOut } from 'lucide-react';
 import { adminLogout } from '@/lib/adminAuth';
 
@@ -31,6 +30,30 @@ export default function AdminDashboard() {
     description: '',
     image: null as File | null,
   });
+
+  const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME ?? 'dzwav4jnk';
+  const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET ?? 'patel-enterprise';
+  const CLOUDINARY_FOLDER = import.meta.env.VITE_CLOUDINARY_FOLDER ?? 'patel-enterprise/products';
+
+  const uploadToCloudinary = async (file: File) => {
+    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+    const data = new FormData();
+    data.append('file', file);
+    data.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    data.append('folder', CLOUDINARY_FOLDER);
+
+    const res = await fetch(url, {
+      method: 'POST',
+      body: data,
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Cloudinary upload failed: ${res.status} ${body}`);
+    }
+
+    return res.json();
+  };
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -79,9 +102,8 @@ export default function AdminDashboard() {
       let imageUrl = '';
 
       if (formData.image) {
-        const imageRef = ref(storage, `products/${Date.now()}_${formData.image.name}`);
-        await uploadBytes(imageRef, formData.image);
-        imageUrl = await getDownloadURL(imageRef);
+        const uploadRes = await uploadToCloudinary(formData.image);
+        imageUrl = uploadRes.secure_url || uploadRes.url || '';
       }
 
       if (editingId) {

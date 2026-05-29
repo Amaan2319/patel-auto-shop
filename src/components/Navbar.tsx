@@ -14,6 +14,9 @@ interface NavbarProps {
 export default function Navbar({ onOpenQuote }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  
+  // NEW: State to track the shape independently of the menu content
+  const [isPillShape, setIsPillShape] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,6 +26,17 @@ export default function Navbar({ onOpenQuote }: NavbarProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // NEW: Watch `isMobileOpen`. Instantly become a box when opened, 
+  // but wait 300ms (matching the exit animation) before becoming a pill again.
+  useEffect(() => {
+    if (isMobileOpen) {
+      setIsPillShape(false);
+    } else {
+      const timer = window.setTimeout(() => setIsPillShape(true), 300);
+      return () => window.clearTimeout(timer);
+    }
+  }, [isMobileOpen]);
+
   const navLinks = [
     { name: 'ABOUT', target: '#about' },
     { name: 'PRODUCTS', target: '#products' },
@@ -30,27 +44,49 @@ export default function Navbar({ onOpenQuote }: NavbarProps) {
     { name: 'CONTACT', target: '#contact' }
   ];
 
-  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, target: string) => {
+  const scrollToTarget = (target: string) => {
+    const normalizedTarget = target.startsWith('#') ? target.slice(1) : target;
+    const element = document.getElementById(normalizedTarget);
+    if (!element) return;
+
+    const topOffset = 80;
+    const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+    const offsetPosition = elementPosition - topOffset;
+
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: 'smooth'
+    });
+  };
+
+  const handleDesktopLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, target: string) => {
+    e.preventDefault();
+    scrollToTarget(target);
+    const normalizedTarget = target.startsWith('#') ? target.slice(1) : target;
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${normalizedTarget}`);
+  };
+
+  const handleMobileLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, target: string) => {
     e.preventDefault();
     setIsMobileOpen(false);
-    const element = document.querySelector(target);
-    if (element) {
-      const topOffset = 80; // height of navbar
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - topOffset;
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
-    }
+    const normalizedTarget = target.startsWith('#') ? target.slice(1) : target;
+    const hash = `#${normalizedTarget}`;
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${hash}`);
+
+    window.setTimeout(() => {
+      scrollToTarget(hash);
+    }, 120);
   };
 
   return (
     <>
       <nav
         id="main-navigation"
-        className={`fixed left-1/2 top-5 z-50 -translate-x-1/2 w-[min(96vw,1100px)] rounded-full border border-white/10 shadow-[0_25px_70px_rgba(0,0,0,0.28)] transition-all duration-300 ${
-          isScrolled
+        // UPDATED: Using `isPillShape` instead of `isMobileOpen` for the border-radius logic
+        className={`fixed left-1/2 top-5 z-50 -translate-x-1/2 w-[min(96vw,1100px)] border border-white/10 shadow-[0_25px_70px_rgba(0,0,0,0.28)] transition duration-300 overflow-hidden ${
+          isPillShape ? 'rounded-full' : 'rounded-2xl'
+        } ${
+          isScrolled || isMobileOpen
             ? 'bg-dark-bg/95 backdrop-blur-2xl py-3'
             : 'bg-dark-bg/75 backdrop-blur-xl py-4'
         }`}
@@ -77,7 +113,7 @@ export default function Navbar({ onOpenQuote }: NavbarProps) {
                 <a
                   key={link.name}
                   href={link.target}
-                  onClick={(e) => handleLinkClick(e, link.target)}
+                  onClick={(e) => handleDesktopLinkClick(e, link.target)}
                   className="text-xs font-semibold font-mono tracking-widest text-gray-400 hover:text-white transition-colors duration-200 relative py-1 group"
                 >
                   {link.name}
@@ -98,8 +134,9 @@ export default function Navbar({ onOpenQuote }: NavbarProps) {
               {/* Hamburger Toggle */}
               <button
                 onClick={() => setIsMobileOpen(!isMobileOpen)}
-                className="md:hidden text-gray-400 hover:text-white focus:outline-none p-2 rounded-sm bg-dark-card border border-white/10"
+                className="md:hidden text-gray-400 hover:text-white focus:outline-none p-2 rounded-sm bg-transparent border border-white/10"
                 aria-label="Toggle navigation menu"
+                aria-expanded={isMobileOpen}
               >
                 {isMobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
@@ -115,15 +152,15 @@ export default function Navbar({ onOpenQuote }: NavbarProps) {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
-              className="md:hidden bg-dark-card/95 border-b border-white/10 w-full overflow-hidden backdrop-blur-xl"
+              className="md:hidden w-full overflow-hidden"
             >
-              <div className="px-4 pt-4 pb-6 space-y-4">
+              <div className="px-4 pt-4 pb-6 space-y-4 border-t border-white/10 mt-4 mx-4">
                 {navLinks.map((link) => (
                   <a
                     key={link.name}
                     href={link.target}
-                    onClick={(e) => handleLinkClick(e, link.target)}
-                    className="block text-xs font-bold font-mono tracking-widest text-gray-400 hover:text-white py-2 border-b border-white/10"
+                    onClick={(e) => handleMobileLinkClick(e, link.target)}
+                    className="block text-xs font-bold font-mono tracking-widest text-gray-400 hover:text-white py-2"
                   >
                     {link.name}
                   </a>
@@ -133,7 +170,7 @@ export default function Navbar({ onOpenQuote }: NavbarProps) {
                     setIsMobileOpen(false);
                     onOpenQuote();
                   }}
-                  className="w-full flex items-center justify-center space-x-2 bg-brand-orange hover:bg-brand-orange-hover text-black font-heading font-extrabold text-xs tracking-widest py-4 uppercase rounded-sm transition-all duration-300"
+                  className="w-full flex items-center justify-center space-x-2 bg-brand-orange hover:bg-brand-orange-hover text-black font-heading font-extrabold text-xs tracking-widest py-4 uppercase rounded-sm transition-all duration-300 mt-2"
                 >
                   <span>GET QUOTE</span>
                   <ArrowUpRight className="w-4 h-4" />
